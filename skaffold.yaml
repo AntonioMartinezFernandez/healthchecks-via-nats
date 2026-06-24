@@ -1,0 +1,23 @@
+apiVersion: skaffold/v4beta12
+kind: Config
+metadata:
+  name: device-monitor
+
+build:
+  local:
+    push: false
+  artifacts:
+    - image: device-monitor
+      context: .
+      ko:
+        main: ./cmd/device-monitor
+
+manifests:
+  rawYaml:
+    - tests/device-monitor.yaml
+
+profiles:
+  - name: local
+    activation:
+      - command: dev
+        kubeContext: kind-nats

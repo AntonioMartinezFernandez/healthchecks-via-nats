@@ -1,0 +1,46 @@
+# nats-ui.yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: natsui
+  namespace: nats
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: natsui
+  template:
+    metadata:
+      labels:
+        app: natsui
+    spec:
+      containers:
+        - name: natsui
+          image: ghcr.io/nats-nui/nui:latest
+          env:
+            - name: NATS_URL
+              value: nats://nats:4222
+          ports:
+            - containerPort: 31311
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: natsui
+  namespace: nats
+spec:
+  type: NodePort
+  selector:
+    app: natsui
+  ports:
+    - name: http
+      port: 31311
+      targetPort: 31311
+      nodePort: 30311

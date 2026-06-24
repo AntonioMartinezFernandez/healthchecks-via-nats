@@ -1,0 +1,23 @@
+# nats-values.yaml
+config:
+  jetstream:
+    enabled: true
+
+jetstream:
+  enabled: true
+
+resources:
+  requests:
+    cpu: 50m
+    memory: 64Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+cluster:
+  enabled: false  # single node
+
+service:
+  ports:
+    nats:
+      port: 4222

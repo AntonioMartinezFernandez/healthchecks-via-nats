@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: device-monitor
+  namespace: default
+  labels:
+    app: device-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: device-monitor
+  template:
+    metadata:
+      labels:
+        app: device-monitor
+    spec:
+      serviceAccountName: device-monitor-sa
+      containers:
+        - name: device-monitor
+          image: device-monitor
+          imagePullPolicy: IfNotPresent
+          ports:
+            - name: http
+              containerPort: 8080
+          env:
+            - name: NATS_URL
+              value: nats://nats.nats.svc.cluster.local:4222
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 32Mi
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: device-monitor-sa
+  namespace: default
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: device-monitor-cr
+rules:
+  - apiGroups:
+      - "*"
+    resources:
+      - "*"
+    verbs:
+      - "*"
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: device-monitor-crb
+subjects:
+  - kind: ServiceAccount
+    name: device-monitor-sa
+    namespace: default
+roleRef:
+  kind: ClusterRole
+  name: device-monitor-cr
+  apiGroup: rbac.authorization.k8s.io
