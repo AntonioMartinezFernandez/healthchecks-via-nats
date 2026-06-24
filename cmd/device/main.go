@@ -36,7 +36,7 @@ func main() {
 		log.Fatalf("failed to get KV store: %v", err)
 	}
 
-	ticker := time.NewTicker(10 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {

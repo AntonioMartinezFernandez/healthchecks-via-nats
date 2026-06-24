@@ -28,7 +28,7 @@ expose-nats:
 
 create-bucket:
 	@echo "Creating bucket..."
-	nats kv add device-health --ttl 60s --server nats://localhost:4222
+	nats kv add device-health --ttl 10s --server nats://localhost:4222
 
 run:
 	skaffold dev  --wait-for-deletions=false  --cleanup=false

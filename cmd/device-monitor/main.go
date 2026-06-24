@@ -65,12 +65,6 @@ func main() {
 		log.Fatalf("kv store: %v", err)
 	}
 
-	for _, deviceID := range []string{"device-123", "device-456", "device-789"} {
-		_, err := kv.Get(deviceID)
-		isHealthy := (err == nil) //! TODO: handle other errors (e.g., permission denied)
-		log.Printf("device %s isHealthy=%v", deviceID, isHealthy)
-	}
-
 	// ctx := context.Background()
 	// deviceList, err := dynClient.Resource(deviceGVR).List(ctx, metav1.ListOptions{})
 	// if err != nil {
@@ -90,38 +84,99 @@ func main() {
 	}
 	defer watcher.Stop()
 
+	// Devices expected to send heartbeats
+	devices := map[string]bool{
+		"device-123": true,
+		"device-456": true,
+		"device-789": true,
+	}
+
+	ticker := time.NewTicker(10 * time.Second)
+	defer ticker.Stop()
+
 	// Graceful shutdown
 	quit := make(chan os.Signal, 1)
 	signal.Notify(quit, syscall.SIGINT, syscall.SIGTERM)
 
 	log.Println("device-monitor running…")
+
 	for {
 		select {
+
 		case entry := <-watcher.Updates():
 			if entry == nil {
 				continue
 			}
+
 			deviceID := entry.Key()
-			// Treat both PUT and DELETE (nil value) as events.
-			// A PUT means the device is healthy (even if value unchanged).
-			// A DELETE means the key expired → device unhealthy.
-			isHealthy := entry.Value() != nil
-			operation := entry.Operation()
 
-			log.Printf("device %s isHealthy=%v operation=%v", deviceID, isHealthy, operation)
+			switch entry.Operation() {
+			case nats.KeyValuePut:
+				log.Printf("device %s isHealthy=true", deviceID)
 
-			// cr, err := dynClient.Resource(deviceGVR).Get(context.Background(), deviceID, metav1.GetOptions{})
-			// if err != nil {
-			// 	log.Printf("failed to get CR %s: %v", deviceID, err)
-			// 	continue
-			// }
-			// updateCondition(dynClient, deviceGVR, cr, isHealthy)
+			default:
+				log.Printf(
+					"device %s watcher event operation=%v",
+					deviceID,
+					entry.Operation(),
+				)
+			}
+
+		case <-ticker.C:
+			checkDeviceHealth(kv, devices)
 
 		case <-quit:
 			log.Println("shutting down…")
 			return
 		}
 	}
+}
+
+func checkDeviceHealth(
+	kv nats.KeyValue,
+	expectedDevices map[string]bool,
+) {
+	ctx := context.Background()
+
+	keys, err := kv.Keys()
+	if err != nil {
+		if err == nats.ErrNoKeysFound {
+			keys = []string{}
+		} else {
+			log.Printf("kv keys: %v", err)
+			return
+		}
+	}
+
+	healthyDevices := make(map[string]bool)
+
+	for _, key := range keys {
+		healthyDevices[key] = true
+	}
+
+	for deviceID := range expectedDevices {
+		if healthyDevices[deviceID] {
+			log.Printf(
+				"device %s isHealthy=true",
+				deviceID,
+			)
+			continue
+		}
+
+		log.Printf(
+			"device %s isHealthy=false (heartbeat expired)",
+			deviceID,
+		)
+
+		// cr, err := dynClient.Resource(deviceGVR).Get(context.Background(), deviceID, metav1.GetOptions{})
+		// if err != nil {
+		// 	log.Printf("failed to get CR %s: %v", deviceID, err)
+		// 	continue
+		// }
+		// updateCondition(dynClient, deviceGVR, cr, isHealthy)
+	}
+
+	_ = ctx
 }
 
 // updateCondition sets the "Ready" condition to True/False and updates the
