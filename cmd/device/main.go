@@ -36,7 +36,7 @@ func main() {
 		log.Fatalf("failed to get KV store: %v", err)
 	}
 
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -47,7 +47,7 @@ func main() {
 		}
 		data, _ := json.Marshal(status)
 
-		//! Put resets the 60s TTL on the key
+		//! Put resets the TTL on the key
 		rev, err := kv.Put(deviceID, data)
 		if err != nil {
 			log.Printf("failed to write heartbeat: %v", err)

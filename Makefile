@@ -1,4 +1,4 @@
-.PHONY: create-cluster destroy-cluster install-infra create-bucket run run-device
+.PHONY: create-cluster destroy-cluster install-infra create-bucket delete-bucket run run-device-1 run-device-2
 
 create-cluster:
 	@echo "Creating cluster..."
@@ -28,10 +28,17 @@ expose-nats:
 
 create-bucket:
 	@echo "Creating bucket..."
-	nats kv add device-health --ttl 10s --server nats://localhost:4222
+	nats kv add device-health --ttl 5s --marker-ttl 1s --server nats://localhost:4222
+
+delete-bucket:
+	@echo "Deleting bucket..."
+	nats kv rm device-health --server nats://localhost:4222
 
 run:
 	skaffold dev  --wait-for-deletions=false  --cleanup=false
 
-run-device:
-	DEVICE_ID=device-123 NATS_URL=nats://localhost:4222 go run cmd/device/main.go
+run-device-1:
+	DEVICE_ID=device-1 NATS_URL=nats://localhost:4222 go run cmd/device/main.go
+
+run-device-2:
+	DEVICE_ID=device-2 NATS_URL=nats://localhost:4222 go run cmd/device/main.go
