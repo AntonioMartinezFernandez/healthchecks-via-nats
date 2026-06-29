@@ -1,4 +1,4 @@
-.PHONY: create-cluster destroy-cluster install-infra create-bucket delete-bucket run run-device-1 run-device-2
+.PHONY: create-cluster destroy-cluster install-infra create-bucket delete-bucket run run-device-1 run-device-2 run-nats-watcher
 
 create-cluster:
 	@echo "Creating cluster..."
@@ -28,7 +28,7 @@ expose-nats:
 
 create-bucket:
 	@echo "Creating bucket..."
-	nats kv add device-health --ttl 5s --marker-ttl 1s --server nats://localhost:4222
+	nats kv add device-health --ttl 10s --marker-ttl 60s --server nats://localhost:4222
 
 delete-bucket:
 	@echo "Deleting bucket..."
@@ -42,3 +42,6 @@ run-device-1:
 
 run-device-2:
 	DEVICE_ID=device-2 NATS_URL=nats://localhost:4222 go run cmd/device/main.go
+
+run-nats-watcher:
+	nats kv watch device-health --server nats://localhost:4222
